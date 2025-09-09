@@ -47,7 +47,6 @@ define Package/bind/Default
   TITLE:=bind
   URL:=https://www.isc.org/software/bind
   SUBMENU:=IP Addresses and Names
-  VARIANT:=without-gssapi
 endef
 
 define Package/bind-nogssapi/Default
@@ -116,23 +115,23 @@ endef
 define Package/bind-server-filter-aaaa
   $(call Package/bind-server)
   DEPENDS:=bind-server
-  TITLE+= filter AAAA plugin (without GSSAPI)
+  TITLE+= AAAA filter plugin
 endef
 
 define Package/bind-server-filter-aaaa-gssapi
   $(call Package/bind-server-gssapi)
   DEPENDS:=bind-server-gssapi
-  TITLE+= filter AAAA plugin (with GSSAPI)
+  TITLE+= AAAA filter plugin
 endef
 
 define Package/bind-client
   $(call Package/bind-nogssapi/Default)
-  TITLE+= dynamic DNS client (without GSSAPI)
+  TITLE+= tools (nsupdate; without GSSAPI)
 endef
 
 define Package/bind-client-gssapi
   $(call Package/bind-gssapi/Default)
-  TITLE+= dynamic DNS client (with GSSAPI)
+  TITLE+= tools (nsupdate; with GSSAPI)
 endef
 
 define Package/bind-tools
