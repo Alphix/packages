@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=bind
 PKG_VERSION:=9.20.11
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 USERID:=bind=57:bind=57
 
 PKG_MAINTAINER:=Noah Meyerhans <frodo@morgul.net>
@@ -31,8 +31,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_CONFIG_DEPENDS := \
 	CONFIG_BIND_LIBJSON \
 	CONFIG_BIND_LIBXML2 \
-	CONFIG_BIND_ENABLE_DOH \
-	CONFIG_BIND_ENABLE_GSSAPI
+	CONFIG_BIND_ENABLE_DOH
 
 PKG_BUILD_DEPENDS += BIND_LIBXML2:libxml2 BIND_LIBJSON:libjson-c
 
@@ -48,9 +47,22 @@ define Package/bind/Default
   TITLE:=bind
   URL:=https://www.isc.org/software/bind
   SUBMENU:=IP Addresses and Names
+  VARIANT:=without-gssapi
 endef
 
-define Package/bind-libs
+define Package/bind-nogssapi/Default
+  $(call Package/bind/Default)
+  DEPENDS:=+bind-libs-nogssapi +@OPENSSL_WITH_EC
+  VARIANT:=without-gssapi
+endef
+
+define Package/bind-gssapi/Default
+  $(call Package/bind/Default)
+  DEPENDS:=+bind-libs-gssapi +@OPENSSL_WITH_EC
+  VARIANT:=with-gssapi
+endef
+
+define Package/bind-libs/Default
   SECTION:=libs
   CATEGORY:=Libraries
   DEPENDS:=+libopenssl \
@@ -60,34 +72,67 @@ define Package/bind-libs
 	+libuv \
 	+liburcu \
 	+BIND_ENABLE_DOH:libnghttp2 \
-	+BIND_ENABLE_GSSAPI:krb5-libs \
-	+BIND_ENABLE_GSSAPI:libcomerr \
 	+BIND_LIBXML2:libxml2 \
 	+BIND_LIBJSON:libjson-c
   TITLE:=bind shared libraries
   URL:=https://www.isc.org/software/bind
 endef
 
+define Package/bind-libs-nogssapi
+  $(call Package/bind-libs/Default)
+  TITLE+= (without GSSPI)
+  PROVIDES:=bind-libs
+  VARIANT:=without-gssapi
+endef
+
+define Package/bind-libs-gssapi
+  $(call Package/bind-libs/Default)
+  DEPENDS+=+krb5-libs +libcomerr
+  TITLE+= (with GSSAPI)
+  PROVIDES:=bind-libs
+  VARIANT:=with-gssapi
+endef
+
 define Package/bind-server
-  $(call Package/bind/Default)
-  TITLE+= DNS server
-  DEPENDS+= +libcap \
-	+bind-rndc
+  $(call Package/bind-nogssapi/Default)
+  TITLE+= DNS server (without GSSAPI)
+  DEPENDS+= +libcap +bind-rndc
 endef
 
 define Package/bind-server/config
 	source "$(SOURCE)/Config.in"
 endef
 
+define Package/bind-server-gssapi
+  $(call Package/bind-gssapi/Default)
+  TITLE+= DNS server (with GSSAPI)
+  DEPENDS+= +libcap +bind-rndc
+endef
+
+define Package/bind-server-gssapi/config
+	source "$(SOURCE)/Config.in"
+endef
+
 define Package/bind-server-filter-aaaa
   $(call Package/bind-server)
   DEPENDS:=bind-server
-  TITLE+= filter AAAA plugin
+  TITLE+= filter AAAA plugin (without GSSAPI)
+endef
+
+define Package/bind-server-filter-aaaa-gssapi
+  $(call Package/bind-server-gssapi)
+  DEPENDS:=bind-server-gssapi
+  TITLE+= filter AAAA plugin (with GSSAPI)
 endef
 
 define Package/bind-client
-  $(call Package/bind/Default)
-  TITLE+= dynamic DNS client
+  $(call Package/bind-nogssapi/Default)
+  TITLE+= dynamic DNS client (without GSSAPI)
+endef
+
+define Package/bind-client-gssapi
+  $(call Package/bind-gssapi/Default)
+  TITLE+= dynamic DNS client (with GSSAPI)
 endef
 
 define Package/bind-tools
@@ -105,39 +150,39 @@ endef
 
 define Package/bind-rndc
   $(call Package/bind/Default)
-  TITLE+= administration tools (rndc and rndc-confgen only)
+  TITLE+= tools (rndc, rndc-confgen)
 endef
 
 define Package/bind-check
   $(call Package/bind/Default)
-  TITLE+= administration tools (named-checkconf and named-checkzone only)
+  TITLE+= tools (named-checkconf, named-checkzone)
 endef
 
 define Package/bind-dnssec
   $(call Package/bind/Default)
-  TITLE+= administration tools (dnssec-keygen, dnssec-settime and dnssec-signzone only)
+  TITLE+= tools (dnssec-keygen, dnssec-settime, dnssec-signzone)
 endef
 
 define Package/bind-host
   $(call Package/bind/Default)
-  TITLE+= simple DNS client
+  TITLE+= tools (host)
 endef
 
 define Package/bind-dig
   $(call Package/bind/Default)
-  TITLE+= DNS excavation tool
+  TITLE+= tools (dig)
 endef
 
 define Package/bind-nslookup
   $(call Package/bind/Default)
-  TITLE+= nslookup utility
+  TITLE+= tools (nslookup)
   ALTERNATIVES:= \
 	  200:/usr/bin/nslookup:/usr/libexec/nslookup-bind
 endef
 
 define Package/bind-ddns-confgen
   $(call Package/bind/Default)
-  TITLE+= administration tools (ddns-confgen and tsig-keygen only)
+  TITLE+= tools (ddns-confgen, tsig-keygen)
 endef
 
 TARGET_LDFLAGS += -Wl,--gc-sections,--as-needed \
@@ -175,17 +220,21 @@ else
 		--disable-doh
 endif
 
-ifdef CONFIG_BIND_ENABLE_GSSAPI
-	CONFIGURE_ARGS += \
-		--with-gssapi
+ifeq ($(BUILD_VARIANT),with-gssapi)
+CONFIGURE_ARGS += \
+	--with-gssapi
 else
-	CONFIGURE_ARGS += \
-		--without-gssapi
+CONFIGURE_ARGS += \
+	--without-gssapi
 endif
 
-define Package/bind-libs/install
+define Package/bind-libs-nogssapi/install
 	$(INSTALL_DIR) $(1)/usr/lib
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/*.so* $(1)/usr/lib
+endef
+
+define Package/bind-libs-gssapi/install
+	$(call Package/bind-libs-nogssapi/install,$(1))
 endef
 
 define Package/bind-server/install
@@ -198,8 +247,16 @@ define Package/bind-server/install
 	$(INSTALL_BIN) ./files/named.init $(1)/etc/init.d/named
 endef
 
+define Package/bind-server-gssapi/install
+	$(call Package/bind-server/install,$(1))
+endef
+
 define Package/bind-server/conffiles
 /etc/bind
+endef
+
+define Package/bind-server-gssapi/conffiles
+$(Package/bind-server/conffiles)
 endef
 
 define Package/bind-server-filter-aaaa/install
@@ -207,9 +264,17 @@ define Package/bind-server-filter-aaaa/install
 	$(CP) $(PKG_INSTALL_DIR)/usr/lib/bind/filter-aaaa.so $(1)/usr/lib/bind
 endef
 
+define Package/bind-server-filter-aaaa-gssapi/install
+	$(call Package/bind-filter-aaaa/install,$(1))
+endef
+
 define Package/bind-client/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/nsupdate $(1)/usr/bin/
+endef
+
+define Package/bind-client-gssapi/install
+	$(call Package/bind-client/install,$(1))
 endef
 
 define Package/bind-tools/install
@@ -257,7 +322,7 @@ define Package/bind-ddns-confgen/install
 	$(LN) -s ddns-confgen $(1)/usr/sbin/tsig-keygen
 endef
 
-$(eval $(call BuildPackage,bind-libs))
+$(eval $(call BuildPackage,bind-libs-nogssapi))
 $(eval $(call BuildPackage,bind-server))
 $(eval $(call BuildPackage,bind-server-filter-aaaa))
 $(eval $(call BuildPackage,bind-client))
@@ -269,3 +334,7 @@ $(eval $(call BuildPackage,bind-host))
 $(eval $(call BuildPackage,bind-dig))
 $(eval $(call BuildPackage,bind-nslookup))
 $(eval $(call BuildPackage,bind-ddns-confgen))
+$(eval $(call BuildPackage,bind-libs-gssapi))
+$(eval $(call BuildPackage,bind-server-gssapi))
+$(eval $(call BuildPackage,bind-server-filter-aaaa-gssapi))
+$(eval $(call BuildPackage,bind-client-gssapi))
