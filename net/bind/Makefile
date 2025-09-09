@@ -43,7 +43,8 @@ DISABLE_NLS:=
 define Package/bind/Default
   SECTION:=net
   CATEGORY:=Network
-  DEPENDS:=+bind-libs +@OPENSSL_WITH_EC
+  DEPENDS:=@(PACKAGE_bind-libs-nogssapi||PACKAGE_bind-libs-gssapi) \
+	+@OPENSSL_WITH_EC
   TITLE:=bind
   URL:=https://www.isc.org/software/bind
   SUBMENU:=IP Addresses and Names
