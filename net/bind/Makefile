@@ -63,7 +63,6 @@ define Package/bind-libs-gssapi
   DEPENDS+=+krb5-libs +libcomerr
   TITLE+= with GSSAPI
   VARIANT:=with-gssapi
-  PROVIDES:=bind-libs
   CONFLICTS:=
 endef
 
@@ -74,17 +73,13 @@ define Package/bind/Default
   TITLE:=bind
   URL:=https://www.isc.org/software/bind
   VARIANT:=without-gssapi
-  # This avoids a recursive dependency
-  DEPENDS:=+@PACKAGE_bind-libs +@OPENSSL_WITH_EC 
-  EXTRA_DEPENDS:=bind-libs
+  DEPENDS:=+bind-libs +@OPENSSL_WITH_EC 
 endef
 
 define Package/bind-gssapi/Default
   $(Package/bind/Default)
   VARIANT:=with-gssapi
-  # This avoids a recursive dependency
-  DEPENDS:=+@PACKAGE_bind-libs-gssapi +@OPENSSL_WITH_EC
-  EXTRA_DEPENDS:=bind-libs-gssapi
+  DEPENDS:=+bind-libs-gssapi +@OPENSSL_WITH_EC
 endef
 
 define Package/bind-check
@@ -202,7 +197,8 @@ endef
 define Package/bind-server
   $(Package/bind/Default)
   TITLE+= DNS server
-  DEPENDS+= +libcap +bind-rndc
+  DEPENDS+= +libcap +@PACKAGE_bind-rndc
+  EXTRA_DEPENDS:=bind-rndc
   CONFLICTS:=bind-server-gssapi
 endef
 
