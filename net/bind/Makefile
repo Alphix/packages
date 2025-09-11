@@ -194,7 +194,7 @@ define Package/bind-rndc
 endef
 
 define Package/bind-rndc-gssapi
-  $(Package/bind/Default)
+  $(Package/bind-gssapi/Default)
   TITLE+= tools (rndc, rndc-confgen) with GSSAPI
   PROVIDES:=bind-rndc
 endef
@@ -358,7 +358,7 @@ Package/bind-server-gssapi/install=$(Package/bind-server/install)
 define Package/bind-server/conffiles
 /etc/bind
 endef
-Package/bind-server-gssapi/install=$(Package/bind-server/install)
+Package/bind-server-gssapi/conffiles=$(Package/bind-server/conffiles)
 
 $(eval $(call BuildPackage,bind-libs))
 $(eval $(call BuildPackage,bind-libs-gssapi))
