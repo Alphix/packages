@@ -96,7 +96,7 @@ endef
 define Package/bind-check-gssapi
   $(Package/bind-gssapi/Default)
   TITLE+= tools (named-checkconf, named-checkzone) with GSSAPI
-  PROVIDES:=bind-check
+  #PROVIDES:=bind-check
 endef
 
 define Package/bind-client
@@ -108,7 +108,7 @@ endef
 define Package/bind-client-gssapi
   $(Package/bind-gssapi/Default)
   TITLE+= tools (nsupdate) with GSSAPI
-  PROVIDES:=bind-client
+  #PROVIDES:=bind-client
 endef
 
 define Package/bind-ddns-confgen
@@ -144,7 +144,7 @@ endef
 define Package/bind-dig-gssapi
   $(Package/bind-gssapi/Default)
   TITLE+= tools (dig) with GSSAPI
-  PROVIDES:=bind-dig
+  #PROVIDES:=bind-dig
 endef
 
 define Package/bind-dnssec
@@ -211,7 +211,7 @@ define Package/bind-server-gssapi
   $(Package/bind-gssapi/Default)
   TITLE+= DNS server with GSSAPI
   DEPENDS+=+libcap +bind-rndc-gssapi
-  PROVIDES:=bind-server
+  #PROVIDES:=bind-server
 endef
 
 define Package/bind-tools
